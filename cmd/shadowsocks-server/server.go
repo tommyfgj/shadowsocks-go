@@ -17,7 +17,7 @@ import (
 	"sync"
 	"syscall"
 
-	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
+	ss "github.com/tommyfgj/shadowsocks-go/shadowsocks"
 )
 
 const (
@@ -162,8 +162,26 @@ func handleConnection(conn *ss.Conn, auth bool) {
 	}
 	if ota {
 		go ss.PipeThenCloseOta(conn, remote)
-	} else {
+	} else if !enableProxy {
 		go ss.PipeThenClose(conn, remote)
+	} else if enableProxy {
+		proxyConn, err := net.Dial("tcp", net.JoinHostPort(proxyHost, strconv.Itoa(int(proxyPort))))
+		defer func() {
+			if !closed && enableProxy {
+				proxyConn.Close()
+			}
+		}()
+		if err != nil {
+			if ne, ok := err.(*net.OpError); ok && (ne.Err == syscall.EMFILE || ne.Err == syscall.ENFILE) {
+				// log too many open file error
+				// EMFILE is process reaches open file limits, ENFILE is system limit
+				log.Println("dial error:", err)
+			} else {
+				log.Println("error connecting to:", host, err)
+			}
+			return
+		}
+		go ss.PipeThenCloseProxy(conn, remote, proxyConn)
 	}
 	ss.PipeThenClose(remote, conn)
 	closed = true
@@ -319,6 +337,9 @@ func unifyPortPassword(config *ss.Config) (err error) {
 
 var configFile string
 var config *ss.Config
+var enableProxy bool
+var proxyHost string
+var proxyPort int
 
 func main() {
 	log.SetOutput(os.Stdout)
@@ -335,6 +356,9 @@ func main() {
 	flag.StringVar(&cmdConfig.Method, "m", "", "encryption method, default: aes-256-cfb")
 	flag.IntVar(&core, "core", 0, "maximum number of CPU cores to use, default is determinied by Go runtime")
 	flag.BoolVar((*bool)(&debug), "d", false, "print debug message")
+	flag.StringVar(&proxyHost, "proxy-host", "127.0.0.1", "specify proxy host")
+	flag.IntVar(&proxyPort, "proxy-port", 80, "proxy port")
+	flag.BoolVar((*bool)(&enableProxy), "proxy", false, "enable http proxy or not")
 
 	flag.Parse()
 
