@@ -174,7 +174,8 @@ func handleConnection(conn *ss.Conn, auth bool) {
 			log.Println("not use ssl proxy this time......")
 			notUseSsl = true
 		}
-	} else if notUseSsl {
+	} 
+	if notUseSsl {
 		remote, err = net.Dial("tcp", host)
 		if err != nil {
 			if ne, ok := err.(*net.OpError); ok && (ne.Err == syscall.EMFILE || ne.Err == syscall.ENFILE) {
