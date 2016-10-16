@@ -151,13 +151,20 @@ func handleConnection(conn *ss.Conn, auth bool) {
 	}
 
 	notUseSsl := false
-	debug.Println("connecting", host, string(remoteAddrInfo.IP)
+	_, ipRange, err := net.ParseCIDR("202.126.0.1/12");
+	if err != nil {
+		log.Println("parse 202.126.0.1/12 failed")
+		return
+	}
+	isTargetIp := ipRange.Contains(remoteAddrInfo.IP)
 
-	if !enableSslProxy || (enableSslProxy && remoteAddrInfo.Port != 443) || (enableSslProxy &&  remoteAddrInfo.Port == 443 && host != "kms.mps.tvb.com:443") {
+	debug.Println("connecting", host)
+
+	if !enableSslProxy || (enableSslProxy && remoteAddrInfo.Port != 443) || (enableSslProxy &&  remoteAddrInfo.Port == 443 && !isTargetIp) {
 		notUseSsl = true
 	}
 
-	if enableSslProxy && remoteAddrInfo.Port == 443  && host == "kms.mps.tvb.com:443" {
+	if enableSslProxy && remoteAddrInfo.Port == 443  && isTargetIp {
 		sock5Dialer, err := sock5Proxy.SOCKS5("tcp", net.JoinHostPort(proxyHost, strconv.Itoa(int(proxyPort))), nil, sock5Proxy.Direct)
 		if err != nil {
 			log.Println("can't connect to the proxy:", err)
