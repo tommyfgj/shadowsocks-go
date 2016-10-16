@@ -18,6 +18,7 @@ import (
 	"syscall"
 
 	ss "github.com/tommyfgj/shadowsocks-go/shadowsocks"
+	sock5Proxy "golang.org/x/net/proxy"
 )
 
 const (
@@ -162,7 +163,7 @@ func handleConnection(conn *ss.Conn, auth bool) {
 	}
 	if ota {
 		go ss.PipeThenCloseOta(conn, remote)
-	} else if !enableProxy {
+	} else if !enableProxy && !enableSslProxy {
 		go ss.PipeThenClose(conn, remote)
 	} else if enableProxy {
 		proxyConn, err := net.Dial("tcp", net.JoinHostPort(proxyHost, strconv.Itoa(int(proxyPort))))
@@ -182,7 +183,7 @@ func handleConnection(conn *ss.Conn, auth bool) {
 			return
 		}
 		go ss.PipeThenCloseProxy(conn, remote, proxyConn)
-	}
+	} else if enableSslProxy {}
 	ss.PipeThenClose(remote, conn)
 	closed = true
 	return
@@ -338,6 +339,7 @@ func unifyPortPassword(config *ss.Config) (err error) {
 var configFile string
 var config *ss.Config
 var enableProxy bool
+var enableSslProxy bool
 var proxyHost string
 var proxyPort int
 
@@ -359,6 +361,7 @@ func main() {
 	flag.StringVar(&proxyHost, "proxy-host", "127.0.0.1", "specify proxy host")
 	flag.IntVar(&proxyPort, "proxy-port", 80, "proxy port")
 	flag.BoolVar((*bool)(&enableProxy), "proxy", false, "enable http proxy or not")
+	flag.BoolVar((*bool)(&enableSslProxy), "ssl-proxy", false, "enable ssl proxy or not")
 
 	flag.Parse()
 
