@@ -151,9 +151,9 @@ func handleConnection(conn *ss.Conn, auth bool) {
 	}
 
 	notUseSsl := false
-	_, ipRange, err := net.ParseCIDR("202.126.0.1/12");
+	_, ipRange, err := net.ParseCIDR(sslCIDR);
 	if err != nil {
-		log.Println("parse 202.126.0.1/12 failed")
+		log.Println("parse ", sslCIDR, " failed")
 		return
 	}
 	isTargetIp := ipRange.Contains(remoteAddrInfo.IP)
@@ -179,7 +179,7 @@ func handleConnection(conn *ss.Conn, auth bool) {
 			} else {
 				log.Println("error connecting to:", host, err)
 			}
-			log.Println("not use ssl proxy this time......")
+			log.Println("sock5 proxy seens error,do not use ssl proxy this time......")
 			notUseSsl = true
 		}
 		log.Println("use ssl proxy......")
@@ -387,6 +387,7 @@ var config *ss.Config
 var enableProxy bool
 var enableSslProxy bool
 var proxyHost string
+var sslCIDR string
 var proxyPort int
 
 func main() {
@@ -405,7 +406,8 @@ func main() {
 	flag.IntVar(&core, "core", 0, "maximum number of CPU cores to use, default is determinied by Go runtime")
 	flag.BoolVar((*bool)(&debug), "d", false, "print debug message")
 	flag.StringVar(&proxyHost, "proxy-host", "127.0.0.1", "specify proxy host")
-	flag.IntVar(&proxyPort, "proxy-port", 80, "proxy port")
+	flag.IntVar(&proxyPort, "proxy-port", 1080, "proxy port")
+	flag.StringVar(&sslCIDR, "CIDR", "202.126.0.1/12", "specify the ssl ip net range")
 	flag.BoolVar((*bool)(&enableProxy), "proxy", false, "enable http proxy or not")
 	flag.BoolVar((*bool)(&enableSslProxy), "ssl-proxy", false, "enable ssl proxy or not")
 
