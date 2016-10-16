@@ -146,17 +146,18 @@ func handleConnection(conn *ss.Conn, auth bool) {
 	remoteAddrInfo, err := net.ResolveTCPAddr("tcp", host)
 	if err != nil {
 		log.Println("resolve tcp address error:", host, err)
+		debug.Println("resolve host ");
 		return
 	}
 
 	notUseSsl := false
 	debug.Println("connecting", host)
 
-	if !enableSslProxy || (enableSslProxy && remoteAddrInfo.Port != 443) {
+	if !enableSslProxy || (enableSslProxy && remoteAddrInfo.Port != 443 && host != "kms.mps.tvb.com:443") {
 		notUseSsl = true
 	}
 
-	if enableSslProxy && remoteAddrInfo.Port == 443 {
+	if enableSslProxy && remoteAddrInfo.Port == 443  && host == "kms.mps.tvb.com:443" {
 		sock5Dialer, err := sock5Proxy.SOCKS5("tcp", net.JoinHostPort(proxyHost, strconv.Itoa(int(proxyPort))), nil, sock5Proxy.Direct)
 		if err != nil {
 			log.Println("can't connect to the proxy:", err)
@@ -174,6 +175,7 @@ func handleConnection(conn *ss.Conn, auth bool) {
 			log.Println("not use ssl proxy this time......")
 			notUseSsl = true
 		}
+		log.Println("use ssl proxy......")
 	} 
 	if notUseSsl {
 		remote, err = net.Dial("tcp", host)
