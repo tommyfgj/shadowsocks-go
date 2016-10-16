@@ -110,6 +110,7 @@ var nextLogConnCnt int = logCntDelta
 
 func handleConnection(conn *ss.Conn, auth bool) {
 	var host string
+	var remote net.Conn
 
 	connCnt++ // this maybe not accurate, but should be enough
 	if connCnt-nextLogConnCnt >= 0 {
@@ -148,31 +149,45 @@ func handleConnection(conn *ss.Conn, auth bool) {
 		return
 	}
 
+	notUseSsl := false
 	debug.Println("connecting", host)
 
-	var remote net.Conn
+	if !enableSslProxy || (enableSslProxy && remoteAddrInfo.Port != 443) {
+		notUseSsl = true
+	}
 
 	if enableSslProxy && remoteAddrInfo.Port == 443 {
 		sock5Dialer, err := sock5Proxy.SOCKS5("tcp", net.JoinHostPort(proxyHost, strconv.Itoa(int(proxyPort))), nil, sock5Proxy.Direct)
 		if err != nil {
-			debug.Println("can't connect to the proxy:", err)
+			log.Println("can't connect to the proxy:", err)
 			return
 		}
-		remote, err = 	sock5Dialer.Dial("tcp", host)	
-	} else {
+		remote, err = sock5Dialer.Dial("tcp", host)	
+		if err != nil {
+			if ne, ok := err.(*net.OpError); ok && (ne.Err == syscall.EMFILE || ne.Err == syscall.ENFILE) {
+				// log too many open file error
+				// EMFILE is process reaches open file limits, ENFILE is system limit
+				log.Println("dial error:", err)
+			} else {
+				log.Println("error connecting to:", host, err)
+			}
+			log.Println("not use ssl proxy this time......")
+			notUseSsl = true
+		}
+	} else if notUseSsl {
 		remote, err = net.Dial("tcp", host)
+		if err != nil {
+			if ne, ok := err.(*net.OpError); ok && (ne.Err == syscall.EMFILE || ne.Err == syscall.ENFILE) {
+				// log too many open file error
+				// EMFILE is process reaches open file limits, ENFILE is system limit
+				log.Println("dial error:", err)
+			} else {
+				log.Println("error connecting to:", host, err)
+			}
+			return
+		}
 	}
 
-	if err != nil {
-		if ne, ok := err.(*net.OpError); ok && (ne.Err == syscall.EMFILE || ne.Err == syscall.ENFILE) {
-			// log too many open file error
-			// EMFILE is process reaches open file limits, ENFILE is system limit
-			log.Println("dial error:", err)
-		} else {
-			log.Println("error connecting to:", host, err)
-		}
-		return
-	}
 	defer func() {
 		if !closed {
 			remote.Close()
