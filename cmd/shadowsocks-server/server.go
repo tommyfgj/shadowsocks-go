@@ -151,7 +151,7 @@ func handleConnection(conn *ss.Conn, auth bool) {
 	}
 
 	notUseSsl := false
-	debug.Println("connecting", host)
+	debug.Println("connecting", host, string(remoteAddrInfo.IP)
 
 	if !enableSslProxy || (enableSslProxy && remoteAddrInfo.Port != 443) || (enableSslProxy &&  remoteAddrInfo.Port == 443 && host != "kms.mps.tvb.com:443") {
 		notUseSsl = true
