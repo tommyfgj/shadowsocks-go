@@ -17,7 +17,7 @@ import (
 	"sync"
 	"syscall"
 
-	ss "github.com/tommyfgj/shadowsocks-go/shadowsocks"
+	ss "../../shadowsocks"
 	sock5Proxy "golang.org/x/net/proxy"
 )
 
@@ -141,8 +141,28 @@ func handleConnection(conn *ss.Conn, auth bool) {
 		log.Println("error getting request", conn.RemoteAddr(), conn.LocalAddr(), err)
 		return
 	}
+
+	remoteAddrInfo, err := net.ResolveTCPAddr("tcp", host)
+	if err != nil {
+		log.Println("resolve tcp address error:", host, err)
+		return
+	}
+
 	debug.Println("connecting", host)
-	remote, err := net.Dial("tcp", host)
+
+	var remote net.Conn
+
+	if enableSslProxy && remoteAddrInfo.Port == 443 {
+		sock5Dialer, err := sock5Proxy.SOCKS5("tcp", net.JoinHostPort(proxyHost, strconv.Itoa(int(proxyPort))), nil, sock5Proxy.Direct)
+		if err != nil {
+			log.Println("can't connect to the proxy:", err)
+			return
+		}
+		remote, err = 	sock5Dialer.Dial("tcp", host)	
+	} else {
+		remote, err = net.Dial("tcp", host)
+	}
+
 	if err != nil {
 		if ne, ok := err.(*net.OpError); ok && (ne.Err == syscall.EMFILE || ne.Err == syscall.ENFILE) {
 			// log too many open file error
@@ -163,7 +183,7 @@ func handleConnection(conn *ss.Conn, auth bool) {
 	}
 	if ota {
 		go ss.PipeThenCloseOta(conn, remote)
-	} else if !enableProxy && !enableSslProxy {
+	} else if !enableProxy {
 		go ss.PipeThenClose(conn, remote)
 	} else if enableProxy {
 		proxyConn, err := net.Dial("tcp", net.JoinHostPort(proxyHost, strconv.Itoa(int(proxyPort))))
@@ -183,7 +203,8 @@ func handleConnection(conn *ss.Conn, auth bool) {
 			return
 		}
 		go ss.PipeThenCloseProxy(conn, remote, proxyConn)
-	} else if enableSslProxy {}
+	}
+
 	ss.PipeThenClose(remote, conn)
 	closed = true
 	return
