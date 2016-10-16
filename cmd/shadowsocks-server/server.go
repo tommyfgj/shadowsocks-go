@@ -155,7 +155,7 @@ func handleConnection(conn *ss.Conn, auth bool) {
 	if enableSslProxy && remoteAddrInfo.Port == 443 {
 		sock5Dialer, err := sock5Proxy.SOCKS5("tcp", net.JoinHostPort(proxyHost, strconv.Itoa(int(proxyPort))), nil, sock5Proxy.Direct)
 		if err != nil {
-			log.Println("can't connect to the proxy:", err)
+			debug.Println("can't connect to the proxy:", err)
 			return
 		}
 		remote, err = 	sock5Dialer.Dial("tcp", host)	
