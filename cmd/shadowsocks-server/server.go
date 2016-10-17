@@ -198,6 +198,7 @@ func handleConnection(conn *ss.Conn, auth bool) {
 		}
 	}
 
+	proxyConnNotCloseFlag := false
 	defer func() {
 		if !closed {
 			remote.Close()
@@ -213,7 +214,7 @@ func handleConnection(conn *ss.Conn, auth bool) {
 	} else if enableProxy {
 		proxyConn, err := net.Dial("tcp", net.JoinHostPort(proxyHost, strconv.Itoa(int(proxyPort))))
 		defer func() {
-			if !closed && enableProxy {
+			if !closed && enableProxy && !proxyConnNotCloseFlag {
 				proxyConn.Close()
 			}
 		}()
@@ -225,6 +226,7 @@ func handleConnection(conn *ss.Conn, auth bool) {
 			} else {
 				log.Println("error connecting to:", host, err)
 			}
+			proxyConnNotCloseFlag = true
 			return
 		}
 		go ss.PipeThenCloseProxy(conn, remote, proxyConn)
