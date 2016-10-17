@@ -165,7 +165,7 @@ func handleConnection(conn *ss.Conn, auth bool) {
 	}
 
 	if enableSslProxy && remoteAddrInfo.Port == 443  && isTargetIp {
-		sock5Dialer, err := sock5Proxy.SOCKS5("tcp", net.JoinHostPort(proxyHost, strconv.Itoa(int(proxyPort))), nil, sock5Proxy.Direct)
+		sock5Dialer, err := sock5Proxy.SOCKS5("tcp", net.JoinHostPort(proxyHost, strconv.Itoa(int(sslProxyPort))), nil, sock5Proxy.Direct)
 		if err != nil {
 			log.Println("can't connect to the proxy:", err)
 			return
@@ -182,7 +182,7 @@ func handleConnection(conn *ss.Conn, auth bool) {
 			log.Println("sock5 proxy seens error,do not use ssl proxy this time......")
 			notUseSsl = true
 		}
-		log.Println("use ssl proxy......")
+		debug.Println("use ssl proxy......")
 	} 
 	if notUseSsl {
 		remote, err = net.Dial("tcp", host)
@@ -389,6 +389,7 @@ var enableSslProxy bool
 var proxyHost string
 var sslCIDR string
 var proxyPort int
+var sslProxyPort int
 
 func main() {
 	log.SetOutput(os.Stdout)
@@ -407,6 +408,7 @@ func main() {
 	flag.BoolVar((*bool)(&debug), "d", false, "print debug message")
 	flag.StringVar(&proxyHost, "proxy-host", "127.0.0.1", "specify proxy host")
 	flag.IntVar(&proxyPort, "proxy-port", 1080, "proxy port")
+	flag.IntVar(&sslProxyPort, "ssl-proxy-port", 1085, "proxy port")
 	flag.StringVar(&sslCIDR, "CIDR", "202.126.0.1/12", "specify the ssl ip net range")
 	flag.BoolVar((*bool)(&enableProxy), "proxy", false, "enable http proxy or not")
 	flag.BoolVar((*bool)(&enableSslProxy), "ssl-proxy", false, "enable ssl proxy or not")
