@@ -231,7 +231,7 @@ func handleConnection(conn *ss.Conn, auth bool) {
 		}
 		go ss.PipeThenCloseProxy(conn, remote, proxyConn)
 	}
-	if enableProxy {
+	if enableProxy && notUseSsl {
 		ss.PipeThenClose(proxyConn, conn)
 	} else {
 		ss.PipeThenClose(remote, conn)
