@@ -211,7 +211,7 @@ func handleConnection(conn *ss.Conn, auth bool) {
 		go ss.PipeThenCloseOta(conn, remote)
 	} else if !enableProxy {
 		go ss.PipeThenClose(conn, remote)
-	} else if enableProxy && remoteAddrInfo.Port != 443 {
+	} else if enableProxy && remoteAddrInfo.Port == 80 {
 		proxyConn, err = net.Dial("tcp", net.JoinHostPort(proxyHost, strconv.Itoa(int(proxyPort))))
 		defer func() {
 			if !closed && enableProxy && !proxyConnNotCloseFlag {
@@ -230,10 +230,10 @@ func handleConnection(conn *ss.Conn, auth bool) {
 			return
 		}
 		go ss.PipeThenCloseProxy(conn, remote, proxyConn)
-	} else if enableProxy && remoteAddrInfo.Port == 443 {
+	} else if enableProxy && remoteAddrInfo.Port != 80 {
 		go ss.PipeThenClose(conn, remote)
 	}
-	if enableProxy && remoteAddrInfo.Port != 443 {
+	if enableProxy && remoteAddrInfo.Port == 80 {
 		ss.PipeThenClose(proxyConn, conn)
 	} else {
 		ss.PipeThenClose(remote, conn)
