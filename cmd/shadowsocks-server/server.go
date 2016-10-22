@@ -110,7 +110,7 @@ var nextLogConnCnt int = logCntDelta
 
 func handleConnection(conn *ss.Conn, auth bool) {
 	var host string
-	var remote net.Conn
+	var remote, proxyConn net.Conn
 
 	connCnt++ // this maybe not accurate, but should be enough
 	if connCnt-nextLogConnCnt >= 0 {
@@ -212,7 +212,7 @@ func handleConnection(conn *ss.Conn, auth bool) {
 	} else if !enableProxy {
 		go ss.PipeThenClose(conn, remote)
 	} else if enableProxy {
-		proxyConn, err := net.Dial("tcp", net.JoinHostPort(proxyHost, strconv.Itoa(int(proxyPort))))
+		proxyConn, err = net.Dial("tcp", net.JoinHostPort(proxyHost, strconv.Itoa(int(proxyPort))))
 		defer func() {
 			if !closed && enableProxy && !proxyConnNotCloseFlag {
 				proxyConn.Close()
