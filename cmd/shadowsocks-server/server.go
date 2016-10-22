@@ -231,8 +231,12 @@ func handleConnection(conn *ss.Conn, auth bool) {
 		}
 		go ss.PipeThenCloseProxy(conn, remote, proxyConn)
 	}
-
-	ss.PipeThenClose(remote, conn)
+	if enableProxy {
+		ss.PipeThenClose(proxyConn, conn)
+	} else {
+		ss.PipeThenClose(remote, conn)
+	}
+	
 	closed = true
 	return
 }
