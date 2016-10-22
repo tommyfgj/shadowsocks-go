@@ -58,15 +58,17 @@ func PipeThenCloseProxy(src, dst, proxyConn net.Conn) {
 		if n > 0 {
 			if n > 3 && string(buf[0:3]) == "GET" {
 				if _, err := proxyConn.Write(buf[0:n]); err != nil {
-                                	Debug.Println("Proxy write:", err)
-                                	break
-                        	}
+                    Debug.Println("Proxy write:", err)
+                    break
+                }
+			} else {
+				// Note: avoid overwrite err returned by Read.
+				if _, err := dst.Write(buf[0:n]); err != nil {
+					Debug.Println("write:", err)
+					break
+				}	
 			}
-			// Note: avoid overwrite err returned by Read.
-			if _, err := dst.Write(buf[0:n]); err != nil {
-				Debug.Println("write:", err)
-				break
-			}
+			
 		}
 		if err != nil {
 			// Always "use of closed network connection", but no easy way to
